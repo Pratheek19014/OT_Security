@@ -1,5 +1,5 @@
 Team info:
-1. Nikhoo
+1. Nikkhoo
 2. Maryam
 
 Protocol info:
