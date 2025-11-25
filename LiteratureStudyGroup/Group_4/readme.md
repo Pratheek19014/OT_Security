@@ -5,5 +5,5 @@ Team info:
 
 Protocol info:
 1. EtherCAT
-2. VPN
+2. VPN, Ethernet/IP
 3. DNS
