@@ -3,6 +3,7 @@ import os
 import hashlib
 import datetime
 import time
+import re
 
 # =========================
 # Configuration
@@ -13,20 +14,19 @@ FILE_STORAGE_PATH = "C:/shares/program01"
 
 os.makedirs(FILE_STORAGE_PATH, exist_ok=True)
 
-# =========================
-# Helper functions
-# =========================
-def sha256(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-# =========================
-# OPC UA Server Setup
-# =========================
 server = Server()
 server.set_endpoint(ENDPOINT)
+server.set_server_name("Secure File Server")
+server.set_security_policy([ua.SecurityPolicyType.NoSecurity])
 
 idx = server.register_namespace(NAMESPACE_URI)
 objects = server.get_objects_node()
+
+# =========================
+# Helper Function
+# =========================
+def sha256(data):
+    return hashlib.sha256(data).hexdigest()
 
 # =========================
 # Create ObjectType
@@ -61,39 +61,40 @@ def write_file_hex(parent, hex_string, file_name):
     parent_node = server.get_node(parent)
     print(f"[DEBUG] parent browse name: {parent_node.get_browse_name()}")
     
-    # Extract value from Variant if needed
-    if isinstance(hex_string, ua.Variant):
-        hex_string = hex_string.Value
-
     # Extract values from Variant if needed
     if isinstance(hex_string, ua.Variant):
         hex_string = hex_string.Value
     if isinstance(file_name, ua.Variant):
         file_name = file_name.Value
 
-    print(f"[DEBUG] hex_string type: {type(hex_string)}, value: {hex_string[:100] if hex_string else 'None'}...")
+    print(f"[DEBUG] hex_string type: {type(hex_string)}, length: {len(hex_string)}")
+    print(f"[DEBUG] first 100 chars: {hex_string[:100]}")
     
     if not isinstance(hex_string, str):
         print(f"[ERROR] Invalid data type: {type(hex_string)}")
         return [ua.Variant(False, ua.VariantType.Boolean)]
     
     try:
-        # Remove spaces and convert hex to bytes
-        hex_string = hex_string.replace(" ", "").replace("\n", "").replace("\r", "")
+        # Remove ALL whitespace characters (spaces, tabs, newlines, etc.)
+        import re
+        hex_string = re.sub(r'\s+', '', hex_string)
+        
+        print(f"[DEBUG] After cleanup, length: {len(hex_string)}")
+        print(f"[DEBUG] First 100 chars after cleanup: {hex_string[:100]}")
+        
+        # Convert hex to bytes
         data = bytes.fromhex(hex_string)
         print(f"[DEBUG] Converted hex to {len(data)} bytes")
     except ValueError as e:
         print(f"[ERROR] Invalid hex string: {e}")
+        print(f"[ERROR] Problematic section: {hex_string[21390:21410]}")
         return [ua.Variant(False, ua.VariantType.Boolean)]
 
     if len(data) == 0:
         print(f"[ERROR] Empty data after conversion")
         return [ua.Variant(False, ua.VariantType.Boolean)]
 
-    node_name = parent_node.get_browse_name().Name
-    # file_path = os.path.join(FILE_STORAGE_PATH, f"{node_name}.bin")
     file_path = os.path.join(FILE_STORAGE_PATH, file_name)
-
     print(f"[DEBUG] Writing to: {file_path}")
 
     try:
@@ -110,7 +111,7 @@ def write_file_hex(parent, hex_string, file_name):
         parent_node.get_child([f"{idx}:Checksum"]).set_value(checksum)
         parent_node.get_child([f"{idx}:LastModified"]).set_value(now)
 
-        print(f"[UPLOAD] {node_name}: {size} bytes, checksum {checksum}")
+        print(f"[UPLOAD] File: {file_name}, Size: {size} bytes, Checksum: {checksum[:16]}...")
         print(f"[SUCCESS] File written to: {file_path}")
         return [ua.Variant(True, ua.VariantType.Boolean)]
     
