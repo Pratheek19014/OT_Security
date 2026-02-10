@@ -140,8 +140,6 @@ class S7PLCSimulator:
             logging.error(f"Failed to start S7 server: {e}")
     
     def handle_s7_client(self, client_sock, client_addr):
-    
-        logging.error("🔥 ENTERED handle_s7_client() 🔥")
         """Handle individual S7 client connection"""
         try:
             while True:
@@ -149,27 +147,11 @@ class S7PLCSimulator:
                 if not data:
                     break
                 
-                logging.info(f"S7 DATA received from {client_addr[0]} ({len(data)} bytes)")
-
-                # 🔴 SIMULATED S7 WRITE DETECTION (binary-safe)
-                if len(data) > 20:
-                    address = "MW102"
-                    value = int.from_bytes(data[-2:], byteorder="big", signed=False)
-
-                    logging.warning(
-                        f"[PLC] Simulated S7 WRITE detected "
-                        f"from {client_addr[0]} | "
-                        f"Address={address} | "
-                        f"RawValue={value}"
-                    )
-
-                    self.handle_io_write(address, value, client_addr[0])
-                # 🔴 SIMULATED S7 WRITE DETECTION
-                                
-
+                # Simple S7 protocol handling (simplified)
+                logging.debug(f"Received S7 data from {client_addr}: {len(data)} bytes")
+                
                 # Send acknowledgment
-                client_sock.send(b'\x03\x00\x00\x16')
-
+                client_sock.send(b'\x03\x00\x00\x16')  # Simple ACK
                 
         except Exception as e:
             logging.error(f"S7 client error: {e}")
