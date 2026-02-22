@@ -1,7 +1,0 @@
-<<<<<<< HEAD
-streamlit
-opcua
-pandas
-=======
-opcua
->>>>>>> 924ea8dae01969160add19cdb93eea02d887088a
