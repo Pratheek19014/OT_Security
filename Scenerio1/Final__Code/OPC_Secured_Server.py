@@ -3,15 +3,37 @@ import os
 import hashlib
 import datetime
 import time
+import subprocess
+import sys
 from opcua.crypto import uacrypto
 from opcua.common.connection import SecureConnection
+
+
+_original_decrypt_rsa_oaep = uacrypto.decrypt_rsa_oaep
+_original_decrypt_rsa15 = uacrypto.decrypt_rsa15
+
+
+def _decrypt_rsa_oaep_safe(private_key, data):
+    if isinstance(data, bytearray):
+        data = bytes(data)
+    return _original_decrypt_rsa_oaep(private_key, data)
+
+
+def _decrypt_rsa15_safe(private_key, data):
+    if isinstance(data, bytearray):
+        data = bytes(data)
+    return _original_decrypt_rsa15(private_key, data)
+
+
+uacrypto.decrypt_rsa_oaep = _decrypt_rsa_oaep_safe
+uacrypto.decrypt_rsa15 = _decrypt_rsa15_safe
 
 # =========================
 # Configuration
 # =========================
 ENDPOINT = "opc.tcp://localhost:4840"
 NAMESPACE_URI = r"http://example.org/secure-file-ingress"
-FILE_STORAGE_PATH = r"D:\Case Studies\Scalance S\OT_Security\Scenerio1\Final__Code\uploaded_files"
+FILE_STORAGE_PATH = r"D:\Case Studies\Scalance S\Code\Final__Code\Scenario_A\uploaded_files"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TRUSTED_CLIENT_CERT_DIR = os.path.join(BASE_DIR, "pki", "server", "trusted", "certs")
 
@@ -52,7 +74,10 @@ def normalize_cert_bytes(cert_bytes):
 
 def validate_client_cert(cert_bytes):
     normalized = normalize_cert_bytes(cert_bytes)
-    return any(normalized == trusted for trusted in TRUSTED_CLIENT_CERTS)
+    if not normalized:
+        return False
+    normalized_hash = sha256(normalized)
+    return any(sha256(trusted) == normalized_hash for trusted in TRUSTED_CLIENT_CERTS)
 
 
 # Monkey patch connection handling to enforce trust list during handshake
@@ -60,6 +85,16 @@ _original_select_policy = SecureConnection.select_policy
 
 
 def _select_policy_with_validation(self, uri, peer_certificate, mode=None):
+    if isinstance(peer_certificate, bytearray):
+        peer_certificate = bytes(peer_certificate)
+    if peer_certificate:
+        peer_hash = sha256(normalize_cert_bytes(peer_certificate))
+        trusted_hashes = {sha256(c) for c in TRUSTED_CLIENT_CERTS}
+        if peer_hash not in trusted_hashes:
+            print(f"[SECURITY] Rejected client certificate SHA256={peer_hash}")
+            print("[SECURITY] Trusted certificate SHA256 list:")
+            for cert_hash in sorted(trusted_hashes):
+                print(f"  - {cert_hash}")
     if peer_certificate and not validate_client_cert(peer_certificate):
         raise ua.UaError("Client certificate not trusted")
     return _original_select_policy(self, uri, peer_certificate, mode)
@@ -75,8 +110,8 @@ server.set_security_policy([
     ua.SecurityPolicyType.Basic256Sha256_SignAndEncrypt
 ])
 
-server.load_certificate(r"D:\Case Studies\Scalance S\OT_Security\Scenerio1\Final__Code\pki\server\certs\server_cert.pem")
-server.load_private_key(r"D:\Case Studies\Scalance S\OT_Security\Scenerio1\Final__Code\pki\server\private\server_key.pem")
+server.load_certificate(r"D:\Case Studies\Scalance S\Code\Final__Code\Scenario_A\pki\server\certs\server_cert.pem")
+server.load_private_key(r"D:\Case Studies\Scalance S\Code\Final__Code\Scenario_A\pki\server\private\server_key.pem")
 
 server.set_security_IDs(["Certificate"])
 
@@ -293,7 +328,65 @@ last_time_var.set_writable()
 # =========================
 # Start Server
 # =========================
-server.start()
+def find_listeners_on_port(port):
+    listeners = []
+    try:
+        result = subprocess.run(
+            ["netstat", "-ano", "-p", "tcp"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        for line in result.stdout.splitlines():
+            if "LISTENING" not in line:
+                continue
+            parts = line.split()
+            if len(parts) < 5:
+                continue
+            local_addr = parts[1]
+            state = parts[3]
+            pid = parts[4]
+            if state != "LISTENING":
+                continue
+            if not local_addr.endswith(f":{port}"):
+                continue
+
+            process_name = "unknown"
+            proc_result = subprocess.run(
+                ["tasklist", "/FO", "CSV", "/NH", "/FI", f"PID eq {pid}"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            row = proc_result.stdout.strip()
+            if row and "No tasks" not in row:
+                if row.startswith('"') and row.count('"') >= 2:
+                    process_name = row.split('"')[1]
+
+            listeners.append((local_addr, pid, process_name))
+    except Exception:
+        return []
+
+    return listeners
+
+
+try:
+    server.start()
+except OSError as exc:
+    err_code = getattr(exc, "winerror", None) or getattr(exc, "errno", None)
+    if err_code == 10048:
+        print("[ERROR] OPC UA server could not start: port 4840 is already in use.")
+        listeners = find_listeners_on_port(4840)
+        if listeners:
+            print("[ERROR] Current listeners on port 4840:")
+            for local_addr, pid, process_name in listeners:
+                print(f"  - {local_addr} | PID={pid} | Process={process_name}")
+        else:
+            print("[ERROR] Could not resolve listener process information.")
+        print("[HINT] Stop the existing process and start this server again.")
+        sys.exit(1)
+    raise
+
 print("===================================")
 print(" OPC UA Hex File Server Started ")
 print(f" Endpoint: {ENDPOINT}")

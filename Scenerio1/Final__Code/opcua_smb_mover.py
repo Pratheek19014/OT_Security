@@ -5,8 +5,10 @@ import hashlib
 from datetime import datetime
 from opcua import Client, ua
 
+# Streamlit run app.py
+
 # =========================
-# Configuration
+# CONFIG (EDIT THESE)
 # =========================
 OPCUA_ENDPOINT = "opc.tcp://localhost:4840"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -14,24 +16,25 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Certificate material for authenticated client sessions
 CLIENT_CERT_PATH = os.path.join(BASE_DIR, "pki", "mover", "certs", "mover_cert.der")
 CLIENT_KEY_PATH = os.path.join(BASE_DIR, "pki", "mover", "private", "mover_key.pem")
+SERVER_CERT_PATH = os.path.join(BASE_DIR, "pki", "server", "certs", "server_cert.der")
 
-# Namespace URI advertised by the secure server (resolved to a numeric index at runtime)
+# Namespace URI advertised by the secure server; resolve its numeric index at runtime
 NAMESPACE_URI = "http://example.org/secure-file-ingress"
 
-# Browse path template to the file object (Objects -> Programs -> GCode_Job1)
+# Browse path template to your file object (Objects -> Programs -> GCode_Job1)
 FILE_OBJECT_PATH_TEMPLATE = [
     "0:Objects",
     "{ns}:Programs",
     "{ns}:GCode_Job1",
 ]
 
-# Location where the OPC UA server writes uploaded files (must match the server setting)
-STAGING_DIR = r"D:\Case Studies\Scalance S\OT_Security\Scenerio1\Final__Code\uploaded_files"
+# Where your OPC UA server writes uploaded files on disk (same as FILE_STORAGE_PATH in server)
+STAGING_DIR = r"D:\Case Studies\Scalance S\Code\Final__Code\Scenario_A\uploaded_files"
 
-# SMB share target (local path supported)
-SMB_TARGET_DIR = r"D:\Case Studies\Scalance S\OT_Security\Scenerio1\Final__Code\SMB_Share"
+# Your SMB share target (works locally)
+SMB_TARGET_DIR = r"D:\Case Studies\Scalance S\Code\Final__Code\Scenario_A\SMB_Share"
 
-# Transfer behavior
+# Behavior
 DELETE_FROM_STAGING_AFTER_COPY = True
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB safety cap
 ALLOWED_EXTENSIONS = {".txt", ".nc", ".gcode", ".hex", ".csv", ".pdf",".jpg",".jpeg"}  # adjust for your case
@@ -42,7 +45,7 @@ REQUEST_POLL_SECONDS = 1.0
 REQUEST_TIMEOUT_SECONDS = 0  # 0 = wait forever
 FILE_WAIT_SECONDS = 30
 
-# Node browse-name templates under the file object
+# Node browse-name templates residing under the file object
 NODE_TRANSFER_REQUEST = "{ns}:TransferRequest"
 NODE_REQUESTED_FILE   = "{ns}:RequestedFileName"
 NODE_LAST_STATUS      = "{ns}:LastTransferStatus"
@@ -50,7 +53,7 @@ NODE_LAST_TIME        = "{ns}:LastTransferTime"
 
 
 # =========================
-# Helper Functions
+# HELPERS
 # =========================
 def sha256_file(path: str) -> str:
     h = hashlib.sha256()
@@ -66,7 +69,7 @@ def pick_file(staging_dir: str, requested_name: str) -> str:
             raise FileNotFoundError(f"Requested file not found in staging: {candidate}")
         return candidate
 
-    # Otherwise pick the newest regular file
+    # else pick newest regular file
     files = [
         os.path.join(staging_dir, f)
         for f in os.listdir(staging_dir)
@@ -131,7 +134,7 @@ def update_error_state(n_status, n_time, n_req, message: Exception):
 # MAIN
 # =========================
 def main():
-    # Basic validation of local dependencies
+    # sanity checks
     if not os.path.isdir(STAGING_DIR):
         raise RuntimeError(f"STAGING_DIR does not exist: {STAGING_DIR}")
     if not os.path.isdir(SMB_TARGET_DIR):
@@ -139,13 +142,14 @@ def main():
     for path, label in (
         (CLIENT_CERT_PATH, "client certificate"),
         (CLIENT_KEY_PATH, "client private key"),
+        (SERVER_CERT_PATH, "server certificate"),
     ):
         if not os.path.isfile(path):
             raise RuntimeError(f"Missing {label} at: {path}")
 
     client = Client(OPCUA_ENDPOINT)
     client.set_security_string(
-        f"Basic256Sha256,SignAndEncrypt,{CLIENT_CERT_PATH},{CLIENT_KEY_PATH}"
+        f"Basic256Sha256,SignAndEncrypt,{CLIENT_CERT_PATH},{CLIENT_KEY_PATH},{SERVER_CERT_PATH}"
     )
     client.connect()
     print("[INFO] Connected to OPC UA:", OPCUA_ENDPOINT)
@@ -163,12 +167,12 @@ def main():
         node_last_status = NODE_LAST_STATUS.format(ns=ns_index)
         node_last_time = NODE_LAST_TIME.format(ns=ns_index)
 
-        # Resolve the file object node
+        # Get file object node
         node = client.get_root_node()
         for p in file_object_path:
             node = node.get_child(p)
 
-        # Resolve control variable nodes
+        # Get control variable nodes
         n_req = node.get_child([node_transfer_request])
         n_name = node.get_child([node_requested_file])
         n_status = node.get_child([node_last_status])
@@ -184,11 +188,11 @@ def main():
                     time.sleep(REQUEST_POLL_SECONDS)
                     continue
 
-                # Mark request as in-progress
+                # Mark in progress
                 n_status.set_value("IN_PROGRESS")
                 n_time.set_value(datetime.now().isoformat(timespec="seconds"))
 
-                # Select and validate file (wait briefly if needed)
+                # Pick & validate file (wait briefly if needed)
                 src_path = wait_for_file(STAGING_DIR, requested_name, FILE_WAIT_SECONDS)
                 validate_file(src_path)
 
@@ -197,10 +201,10 @@ def main():
 
                 print(f"[INFO] Moving file: {src_path} -> {dst_path}")
 
-                # Copy to SMB target
+                # Copy
                 shutil.copy2(src_path, dst_path)
 
-                # Verify copy
+                # Verify
                 src_size = os.path.getsize(src_path)
                 dst_size = os.path.getsize(dst_path)
                 if src_size != dst_size:
@@ -211,12 +215,12 @@ def main():
                 if src_hash != dst_hash:
                     raise RuntimeError("Copy verification failed: SHA256 mismatch")
 
-                # Optional cleanup of staging directory
+                # Cleanup staging
                 if DELETE_FROM_STAGING_AFTER_COPY:
                     os.remove(src_path)
                     print("[INFO] Deleted staging file after successful copy.")
 
-                # Success status and request reset
+                # Success status + reset request
                 n_status.set_value(f"DONE: {fname}")
                 n_time.set_value(datetime.now().isoformat(timespec="seconds"))
                 n_req.set_value(False)
