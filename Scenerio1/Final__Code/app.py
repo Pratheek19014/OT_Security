@@ -4,7 +4,7 @@ Main Streamlit application for OPC UA File Transfer Dashboard
 import streamlit as st
 import time
 import os
-import glob
+import tempfile
 from ui.components import (
     render_header,
     render_status_card,
@@ -102,11 +102,18 @@ def set_active_endpoint(endpoint: str | None):
     st.session_state.last_check_time = 0
 
 
-def perform_transfer(file_path):
+def perform_transfer(uploaded_file):
     """Perform the file transfer operation"""
+    temp_path = None
     try:
+        # Create per-transfer temp file outside project workspace
+        suffix = os.path.splitext(uploaded_file.name)[1]
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+            temp_file.write(uploaded_file.getbuffer())
+            temp_path = temp_file.name
+
         # Initialize components
-        file_handler = FileHandler(file_path)
+        file_handler = FileHandler(temp_path)
         endpoint = st.session_state.get('server_endpoint')
         if not endpoint:
             raise Exception("No OPC UA endpoint configured.")
@@ -196,6 +203,12 @@ def perform_transfer(file_path):
             opc_client.disconnect()
         clear_transfer_banner()
         return False
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except Exception:
+                pass
 
 
 def main():
@@ -254,10 +267,6 @@ def main():
         
         # Transfer button - only show if server is connected
         if uploaded_file is not None:
-            temp_path = f"temp_{uploaded_file.name}"
-            with open(temp_path, "wb") as f:
-                f.write(uploaded_file.getbuffer())
-
             if st.session_state.connection_status:
                 st.markdown(
                     """
@@ -280,7 +289,7 @@ def main():
                 )
 
                 if st.button("Start Transfer", type="primary"):
-                    perform_transfer(temp_path)
+                    perform_transfer(uploaded_file)
                     st.rerun()
             else:
                 st.markdown(
@@ -302,13 +311,6 @@ def main():
                 
                 # Increment uploader key to reset file uploader
                 st.session_state.uploader_key += 1
-                
-                # Delete temporary files
-                for temp_file in glob.glob("temp_*"):
-                    try:
-                        os.remove(temp_file)
-                    except Exception:
-                        pass
                 
                 st.rerun()
         

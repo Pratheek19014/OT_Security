@@ -29,15 +29,15 @@ FILE_OBJECT_PATH_TEMPLATE = [
 ]
 
 # Where your OPC UA server writes uploaded files on disk (same as FILE_STORAGE_PATH in server)
-STAGING_DIR = r"D:\Case Studies\Scalance S\Code\Final__Code\Scenario_A\uploaded_files"
+STAGING_DIR = r"D:\Case Studies\Scalance S\OT_Security\Scenerio1\Final__Code\uploaded_files"
 
 # Your SMB share target (works locally)
-SMB_TARGET_DIR = r"D:\Case Studies\Scalance S\Code\Final__Code\Scenario_A\SMB_Share"
+SMB_TARGET_DIR = r"D:\Case Studies\Scalance S\OT_Security\Scenerio1\Final__Code\SMB_Share"
 
 # Behavior
 DELETE_FROM_STAGING_AFTER_COPY = True
 MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024  # 50 MB safety cap
-ALLOWED_EXTENSIONS = {".txt", ".nc", ".gcode", ".hex", ".csv", ".pdf",".jpg",".jpeg"}  # adjust for your case
+ALLOWED_EXTENSIONS = {".txt", ".nc", ".gcode", ".hex", ".csv", ".pdf",".jpg",".jpeg", ".png"}  # adjust for your case
 
 # Polling behavior
 WAIT_FOR_REQUEST = True
