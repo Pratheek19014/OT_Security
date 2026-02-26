@@ -33,7 +33,7 @@ uacrypto.decrypt_rsa15 = _decrypt_rsa15_safe
 # =========================
 ENDPOINT = "opc.tcp://localhost:4840"
 NAMESPACE_URI = r"http://example.org/secure-file-ingress"
-FILE_STORAGE_PATH = r"D:\Case Studies\Scalance S\Code\Final__Code\Scenario_A\uploaded_files"
+FILE_STORAGE_PATH = r"D:\Case Studies\Scalance S\OT_Security\Scenerio1\Final__Code\uploaded_files"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TRUSTED_CLIENT_CERT_DIR = os.path.join(BASE_DIR, "pki", "server", "trusted", "certs")
 
