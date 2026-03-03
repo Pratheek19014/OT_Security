@@ -1,0 +1,92 @@
+[
+  {
+    "timestamp": "2026-02-22T15:02:27.261672",
+    "file_name": "temp_Master_Thesis_Proposal.pdf",
+    "file_size": 148321,
+    "status": "success",
+    "error_message": null,
+    "chunks_sent": 10,
+    "total_chunks": 10
+  },
+  {
+    "timestamp": "2026-02-22T15:02:26.186859",
+    "file_name": "temp_Master_Thesis_Proposal.pdf",
+    "file_size": 148321,
+    "status": "in_progress",
+    "error_message": null,
+    "chunks_sent": 0,
+    "total_chunks": 10
+  },
+  {
+    "timestamp": "2026-02-22T14:29:52.239718",
+    "file_name": "temp_Master_Thesis_Proposal.pdf",
+    "file_size": 148321,
+    "status": "success",
+    "error_message": null,
+    "chunks_sent": 10,
+    "total_chunks": 10
+  },
+  {
+    "timestamp": "2026-02-22T14:29:51.172350",
+    "file_name": "temp_Master_Thesis_Proposal.pdf",
+    "file_size": 148321,
+    "status": "in_progress",
+    "error_message": null,
+    "chunks_sent": 0,
+    "total_chunks": 10
+  },
+  {
+    "timestamp": "2026-02-22T14:29:28.949802",
+    "file_name": "temp_mime-attachment",
+    "file_size": 511,
+    "status": "success",
+    "error_message": null,
+    "chunks_sent": 1,
+    "total_chunks": 1
+  },
+  {
+    "timestamp": "2026-02-22T14:29:28.719811",
+    "file_name": "temp_mime-attachment",
+    "file_size": 511,
+    "status": "in_progress",
+    "error_message": null,
+    "chunks_sent": 0,
+    "total_chunks": 1
+  },
+  {
+    "timestamp": "2026-02-21T16:32:47.428872",
+    "file_name": "temp_Master_Thesis_Proposal.pdf",
+    "file_size": 148321,
+    "status": "success",
+    "error_message": null,
+    "chunks_sent": 10,
+    "total_chunks": 10
+  },
+  {
+    "timestamp": "2026-02-21T16:32:46.354051",
+    "file_name": "temp_Master_Thesis_Proposal.pdf",
+    "file_size": 148321,
+    "status": "in_progress",
+    "error_message": null,
+    "chunks_sent": 0,
+    "total_chunks": 10
+  },
+  {
+    "timestamp": "2026-02-21T16:26:02.335316",
+    "file_name": "temp_mime-attachment",
+    "file_size": 511,
+    "status": "success",
+    "error_message": null,
+    "chunks_sent": 1,
+    "total_chunks": 1
+  },
+  {
+    "timestamp": "2026-02-21T16:26:02.204584",
+    "file_name": "temp_mime-attachment",
+    "file_size": 511,
+    "status": "in_progress",
+    "error_message": null,
+    "chunks_sent": 0,
+    "total_chunks": 1
+  }
+]
