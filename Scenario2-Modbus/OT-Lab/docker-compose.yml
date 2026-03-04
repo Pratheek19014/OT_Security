@@ -1,0 +1,80 @@
+﻿version: "3.8"
+
+services:
+  plc-simulator:
+    image: python:3.9-alpine
+    container_name: plc
+    networks:
+      plc_net:
+        ipv4_address: 192.168.30.2
+    volumes:
+      - ./plc-simulator.py:/app/plc-simulator.py
+    command: >
+      sh -c "pip install pymodbus && python /app/plc-simulator.py"
+
+  attacker:
+    image: python:3.9-alpine
+    container_name: attacker
+    cap_add:
+      - NET_ADMIN
+    networks:
+      attacker_net:
+        ipv4_address: 192.168.20.2
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./attacks:/attacks
+    command: >
+      sh -c "
+       echo 'Installing iptables...' &&
+       apk update &&
+       apk add iptables iproute2 &&
+       echo 'Setting up routing...' &&
+       # Remove any existing default route
+       ip route del default 2>/dev/null || true &&
+       # Add correct route via Suricata
+       ip route add default via 192.168.20.10 dev eth0 &&
+       # Verify and show route
+       echo 'Current route:' &&
+       ip route show default &&
+       echo 'Attacker container is ready!' &&
+       tail -f /dev/null
+      "
+
+  suricata:
+    image: jasonish/suricata:latest
+    container_name: suricata
+    privileged: true
+    networks:
+      attacker_net:
+        ipv4_address: 192.168.20.10
+      plc_net:
+        ipv4_address: 192.168.30.10
+    cap_add:
+      - NET_ADMIN
+      - SYS_NICE
+    volumes:
+      - ./suricata-config/:/etc/suricata/
+      - ./logs/:/var/log/suricata/
+    sysctls:
+      - net.ipv4.ip_forward=1
+      - net.ipv4.conf.all.forwarding=1
+    command: >
+      -i eth0
+      -i eth1
+      -c /etc/suricata/suricata.yaml
+      -v
+
+networks:
+  attacker_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.20.0/24
+          gateway: 192.168.20.1
+  plc_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.30.0/24
+          gateway: 192.168.30.1

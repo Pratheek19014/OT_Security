@@ -1,0 +1,6 @@
+# MODBUS DoS detection (10 NEW TCP connections in 1 second)
+alert tcp any any -> 192.168.30.2 502 (msg:"MODBUS: DoS - SYN flood >10 connections in 1s"; flags:S; flow:to_server; threshold:type limit, track by_src, count 1, seconds 1; sid:2100101; rev:3;)
+
+
+# MODBUS Function code 05 detection
+alert tcp any any -> 192.168.30.2 502 (msg:"MODBUS: Function code 05 write coil"; content:"|05|"; offset:7; depth:1; sid:2100102; rev:3; threshold:type both, track by_src, count 1, seconds 60;)

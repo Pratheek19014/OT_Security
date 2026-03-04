@@ -1,0 +1,2 @@
+# Alert on EVERY Modbus packet (not just new connections)
+alert tcp any any -> 192.168.10.100 502 (msg:"MODBUS: Every Packet Alert"; flow:established,to_server; sid:2000111; rev:1;)

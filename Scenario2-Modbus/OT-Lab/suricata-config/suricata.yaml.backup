@@ -1,0 +1,34 @@
+%YAML 1.1
+---
+af-packet:
+  - interface: eth0
+    cluster-id: 99
+    cluster-type: cluster_flow
+    defrag: yes
+
+default-rule-path: /etc/suricata
+rule-files:
+  - modbus.rules
+
+outputs:
+  - fast:
+      enabled: yes
+      filename: fast.log
+      append: yes
+      
+  - eve-log:
+      enabled: yes
+      filename: eve.json
+      types:
+        - alert
+        - flow
+
+app-layer:
+  protocols:
+    modbus:
+      enabled: yes
+      detection-ports:
+        dp: 502
+
+logging:
+  default-log-level: info

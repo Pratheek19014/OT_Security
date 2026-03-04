@@ -1,0 +1,6 @@
+02/28/2026-11:18:33.890790  [**] [1:2100101:3] MODBUS: DoS - SYN flood >10 connections in 1second [**] [Classification: (null)] [Priority: 3] {TCP} 192.168.20.2:34132 -> 192.168.30.2:502
+02/28/2026-11:33:50.734123  [**] [1:2100101:3] MODBUS: DoS - SYN flood >10 connections in 1second [**] [Classification: (null)] [Priority: 3] {TCP} 192.168.20.2:40794 -> 192.168.30.2:502
+02/28/2026-11:34:16.140031  [**] [1:2100101:3] MODBUS: DoS - SYN flood >10 connections in 1second [**] [Classification: (null)] [Priority: 3] {TCP} 192.168.20.2:59714 -> 192.168.30.2:502
+02/28/2026-11:36:19.009173  [**] [1:2100101:3] MODBUS: DoS - SYN flood >10 connections in 1second [**] [Classification: (null)] [Priority: 3] {TCP} 192.168.20.2:32976 -> 192.168.30.2:502
+02/28/2026-11:45:03.890364  [**] [1:2100101:3] MODBUS: DoS - SYN flood >10 connections in 1second [**] [Classification: (null)] [Priority: 3] {TCP} 192.168.20.2:51046 -> 192.168.30.2:502
+02/28/2026-12:01:43.420568  [**] [1:2100101:3] MODBUS: DoS - SYN flood >10 connections in 1second [**] [Classification: (null)] [Priority: 3] {TCP} 192.168.20.2:53944 -> 192.168.30.2:502
