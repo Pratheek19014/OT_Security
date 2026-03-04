@@ -1,9 +1,9 @@
 Team info:
-1. Raafat- 11367046
-2. Cheng- 11389611
-3. Sugin- 11368759
+1. Mohamed Shattat - 11367046 Https
+2. Cheng- 11389611  SNMP
+3. Sugin- 11368759  OPC UA
 
 Protocol Info:
-1. OPC UA
-2. HTTP
-3. SNMP
+1. HTTP 
+2. SNMP
+3. OPC UA
