@@ -644,24 +644,11 @@ sudo grep "3200003" /var/log/suricata/fast.log | head -10
 sudo grep "1000028" /var/log/suricata/fast.log
 ```
 
-**Export for thesis:**
-```bash
-# Create reports directory
-mkdir -p ~/thesis_data
-
-# Export all alerts
-sudo cp /var/log/suricata/fast.log ~/thesis_data/alerts_$(date +%Y%m%d_%H%M%S).log
-
-# Export JSON events
-sudo cp /var/log/suricata/eve.json ~/thesis_data/events_$(date +%Y%m%d_%H%M%S).json
-
-# Export PCAP if enabled
-sudo cp /var/log/suricata/log.pcap ~/thesis_data/traffic_$(date +%Y%m%d_%H%M%S).pcap
-```
 
 
 
-### Data Collection for Thesis
+
+### Data Collection
 
 **Capture Traffic During Attacks:**
 
