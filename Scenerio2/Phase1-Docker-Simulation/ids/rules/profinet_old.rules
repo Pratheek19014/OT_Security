@@ -1,0 +1,115 @@
+# Profinet IDS Rules for OT Security Simulation
+# Detects attacks on Siemens Profinet devices
+
+# ============================================================
+# ATTACK 1: Unauthorized DCP Set-Name Detection
+# ============================================================
+
+# Detect DCP Set-Name requests (unauthorized device renaming)
+alert ip any any -> $HOME_NET any (msg:"PROFINET: Unauthorized DCP Set-Name Request Detected"; \
+    content:"|04 00|"; offset:2; depth:2; \
+    content:"|02 02|"; distance:4; within:10; \
+    sid:1000001; rev:1; classtype:policy-violation; priority:1; \
+    metadata:attack_target Device, affected_product Siemens_PLC;)
+
+# Detect DCP Set requests from non-authorized sources
+alert ip !192.168.100.20 any -> 192.168.100.10 any (msg:"PROFINET: DCP Set Request from Unauthorized Source"; \
+    content:"|04|"; offset:2; depth:1; \
+    sid:1000002; rev:1; classtype:attempted-admin; priority:1;)
+
+# ============================================================
+# ATTACK 2: Control Value Overwrite Detection
+# ============================================================
+
+# Detect S7 Write commands with out-of-range values
+alert tcp any any -> 192.168.100.10 102 (msg:"PROFINET: Suspicious S7 Write Command - Possible Value Overwrite"; \
+    content:"|32 01|"; offset:7; depth:2; \
+    sid:1000003; rev:1; classtype:attempted-admin; priority:1; \
+    metadata:attack_target PLC_Memory;)
+
+# Detect large value writes (> 20736 = 75% safety limit)
+alert tcp any any -> 192.168.100.10 102 (msg:"PROFINET: Control Value Exceeds Safety Limit"; \
+    content:"|32 01|"; \
+    byte_test:2,>,20736,11,relative; \
+    sid:1000004; rev:1; classtype:policy-violation; priority:1;)
+
+# Detect writes to critical memory areas (MW100, MW102)
+alert tcp any any -> 192.168.100.10 102 (msg:"PROFINET: Write to Critical Memory Address Detected"; \
+    content:"|03 00|"; offset:0; depth:2; \
+    content:"|02 f0 80|"; distance:2; within:3; \
+    sid:1000005; rev:1; classtype:attempted-admin; priority:2;)
+
+# ============================================================
+# ATTACK 3: Rapid Setpoint Changes Detection
+# ============================================================
+
+# Detect rapid succession of write commands (flood detection)
+alert tcp any any -> 192.168.100.10 102 (msg:"PROFINET: Rapid Write Command Sequence Detected"; \
+    content:"|32 01|"; \
+    detection_filter:track by_src, count 5, seconds 3; \
+    sid:1000006; rev:1; classtype:attempted-dos; priority:2;)
+
+# Detect multiple connections to S7 port in short time
+alert tcp any any -> 192.168.100.10 102 (msg:"PROFINET: Multiple S7 Connections - Possible Attack"; \
+    flags:S; \
+    detection_filter:track by_src, count 5, seconds 5; \
+    sid:1000007; rev:1; classtype:attempted-dos; priority:2;)
+
+# ============================================================
+# ATTACK 4: Profinet Frame Flooding Detection
+# ============================================================
+
+# Detect excessive Profinet cyclic data frames
+alert ip any any -> 192.168.100.10 any (msg:"PROFINET: Excessive Cyclic Data Frames - DoS Attack"; \
+    content:"|80|"; offset:0; depth:1; \
+    detection_filter:track by_src, count 50, seconds 1; \
+    sid:1000008; rev:1; classtype:attempted-dos; priority:1;)
+
+# Detect malformed Profinet frames
+alert ip any any -> any any (msg:"PROFINET: Malformed Profinet Frame Detected"; \
+    content:"|88 92|"; offset:12; depth:2; \
+    byte_test:2,>,1500,14,relative; \
+    sid:1000009; rev:1; classtype:protocol-command-decode; priority:2;)
+
+# ============================================================
+# General Profinet Security Rules
+# ============================================================
+
+# Detect any DCP communication outside normal hours (if needed)
+# alert ip any any -> any any (msg:"PROFINET: DCP Activity During Maintenance Window"; \
+#     content:"|fe fc|"; offset:0; depth:2; \
+#     sid:1000010; rev:1; classtype:policy-violation; priority:3;)
+
+# Detect Profinet communication from unexpected sources
+alert ip !192.168.100.0/24 any -> 192.168.100.10 any (msg:"PROFINET: Traffic from External Network"; \
+    sid:1000011; rev:1; classtype:bad-unknown; priority:1;)
+
+# Detect potential MitM attack (ARP spoofing)
+# Note: This would require ARP protocol support in Suricata
+# alert arp any any -> any any (msg:"PROFINET: Potential ARP Spoofing Detected"; \
+#     sid:1000012; rev:1; classtype:attempted-admin; priority:1;)
+
+# Detect unauthorized Profinet controller
+alert ip any any -> 192.168.100.10 any (msg:"PROFINET: Multiple Controllers Detected - Configuration Error or Attack"; \
+    content:"|fe fc|"; \
+    detection_filter:track by_dst, count 2, seconds 60; \
+    sid:1000013; rev:1; classtype:policy-violation; priority:2;)
+
+# ============================================================
+# Anomaly Detection Rules
+# ============================================================
+
+# Detect unusual packet sizes
+alert ip any any -> 192.168.100.10 any (msg:"PROFINET: Unusually Large Packet Size"; \
+    dsize:>1400; \
+    sid:1000014; rev:1; classtype:bad-unknown; priority:3;)
+
+# Detect fragmented Profinet packets (unusual)
+alert ip any any -> any any (msg:"PROFINET: Fragmented Profinet Packet Detected"; \
+    content:"|88 92|"; offset:12; depth:2; \
+    fragbits:M; \
+    sid:1000015; rev:1; classtype:bad-unknown; priority:2;)
+
+# ============================================================
+# END OF RULES
+# ============================================================

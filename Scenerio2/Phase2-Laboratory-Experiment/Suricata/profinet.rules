@@ -1,0 +1,14 @@
+alert tcp 192.168.0.20 any -> 192.168.0.1 102 (msg:"Motor Overspeed >1500 RPM Detected"; content:"|32 01|"; offset:7; depth:2; byte_test:2,>,0x05DC,28,relative,big; sid:800005; rev:1;)
+
+# Detect rapid speed changes in S7 motor control
+alert tcp 192.168.0.20 any -> 192.168.0.1 102 \
+(msg:"Rapid Speed Change Detected"; \
+luajit:/etc/suricata/lua/detect_change.lua; \
+sid:3200003; rev:1;)
+
+alert tcp any any -> 192.168.0.1 102 (msg:"OT-IDS: S7comm Potential DoS (Connection Flood)"; flow:to_server; flags:S; threshold:type both, track by_src, count 50, seconds 5; classtype:attempted-dos; sid:1000005; rev:1;)
+
+alert udp any any -> any 34964 (msg:"PROFINET DCP: Traffic Detected"; \
+    sid:5000002; rev:1;)
+    
+alert tcp ![192.168.0.20] any -> 192.168.0.1 102 (msg:"OT-IDS: UNAUTHORIZED S7comm Write Detected"; flow:to_server; content:"|32 01|"; content:"|05 01 12|"; threshold:type limit, track by_src, count 1, seconds 60; sid:1000028; rev:2;)
