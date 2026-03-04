@@ -5,7 +5,7 @@
 [![Docker](https://img.shields.io/badge/Docker-Simulation-green)](https://www.docker.com/)
 [![IDS](https://img.shields.io/badge/IDS-Suricata-orange)](https://suricata.io/)
 
-> **A comprehensive industrial cybersecurity research project demonstrating attack detection on Siemens PLCs using Suricata IDS, implemented in both simulated (Docker) and real hardware environments.**
+> **A comprehensive industrial OT-security  project demonstrating attack detection on profinet Using Siemens PLCs , Suricata IDS, implemented in both simulated (Docker) and real hardware environments.**
 
 ---
 
@@ -42,16 +42,18 @@ This laboratory demonstrates real-world industrial cybersecurity threats in OT e
 - Real PROFINET communication
 - Production-grade validation
 
-📂 **[Phase 2 Documentation →](./Phase2-Real-Lab/README.md)**
+📂 **[Phase 2 Documentation →](./Phase2-Laboratory-Experiment/README.md)**
 
 ---
 
-## ⚔️ Attack Scenarios (Both Phases)
+## ⚔️ Attack Scenarios
 
 1. **Motor Overspeed** - S7 Write >3000 RPM
 2. **Rapid Changes** - 6 writes in 5 seconds
 3. **DoS Flood** - 50+ SYN packets
-4. **DCP Set-Name** - Layer 2 device renaming
+4. **DCP Set-Name** - Layer 2 device renaming (Only in Docker)
+5. **Replay Attack Set** - Replaying packets (Lab)
+
 
 ---
 
@@ -63,42 +65,23 @@ cd Phase1-Docker-Simulation
 docker compose up
 ```
 
-**Option B: Real Lab (2-3 hours)**
+**Option B: Laboratory-Experiment (2-3 hours)**
 ```bash
-cd Phase2-Real-Lab
+cd Phase2-Laboratory-Experiment
 # Follow hardware setup guide
 ```
 
 ---
 
-## 📊 Research Results
-
-| Metric | Docker | Real Lab |
-|--------|--------|----------|
-| **S7 Detection** | 100% | 95-100% |
-| **DCP Detection** | Limited | 100% |
-| **Alert Latency** | <50ms | <100ms |
 
 ---
 
-## 📜 License
 
-MIT License - See [LICENSE](LICENSE)
-
----
-
-## 📞 Contact
-
-**Author:** [Your Name]  
-**Email:** your.email@university.edu  
-**GitHub:** [Repository Link]
-
----
 
 <div align="center">
 
 ⭐ Star this repository if you find it useful!
 
-*Industrial Cybersecurity Research*
+*Industrial OT-security Casestudy*
 
 </div>

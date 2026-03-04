@@ -23,11 +23,11 @@ This phase validates Phase 1 findings using actual industrial hardware, demonstr
 ## 🎯 Overview
 
 **What Phase 2 Provides:**
-- ✅ Authentic Siemens S7-1500 PLC behavior
-- ✅ Real PROFINET DCP (Layer 2 EtherType 0x8892)
-- ✅ Actual protocol timing and performance
-- ✅ Production-grade attack impact
-- ✅ 100% DCP detection via Python monitor
+-  Authentic Siemens S7-1500 PLC behavior
+-  PUT/GET communication for attack delivery
+-  4 attack scenarios (Overspeed, Rapid Changes, DoS, Unauthorized Access)
+-  Lua-based anomaly detection
+-  Real PLC safety limits and alarm triggering
 
 **Advantages Over Phase 1:**
 - Real industrial protocols (no simulation limitations)
@@ -35,11 +35,6 @@ This phase validates Phase 1 findings using actual industrial hardware, demonstr
 - Measurable CPU/network impact
 - Layer 2 DCP fully functional
 - Production-ready validation
-
-**Time Investment:**
-- Initial Setup: 2-3 hours
-- Per Attack Test: 5-10 minutes
-- Full Validation: 1 day
 
 ---
 
@@ -53,24 +48,24 @@ This phase validates Phase 1 findings using actual industrial hardware, demonstr
 │                                                                     │
 │  ┌──────────────────┐                                              │
 │  │  Engineering PC  │   TIA Portal Programming                     │
-│  │  192.168.0.107   │   + PRONETA (DCP attacks)                    │
+│  │  192.168.0.40   │   + PRONETA (DCP attacks)                    │
 │  └────────┬─────────┘                                              │
 │           │                                                         │
 │           │                                                         │
 │  ┌────────▼─────────────────────────────────────┐                  │
-│  │    SCALANCE X408-2 Industrial Switch         │                  │
-│  │         192.168.0.254                         │                  │
-│  │                                               │                  │
-│  │  Port 1: PLC1 (Target)    ◄─┐                │                  │
-│  │  Port 6: PLC2 (Attacker)  ◄─┤ Mirrored       │                  │
-│  │  Port 3: Ubuntu IDS       ◄─┘ to Port 3      │                  │
-│  │  Port 5: ET200SP I/O                          │                  │
+│  │    SCALANCE XC-208 Industrial Switch         │                  │
+│  │         192.168.0.4                          │                  │
+│  │                                              │                  │
+│  │  Port 1: Ubuntu IDS        ◄─┐                │                  │
+│  │  Port 4: PLC1 (Target)     ◄─┤ Mirrored       │                  │
+│  │  Port 6: PLC2 (Attacker)   ◄─┘ to Port 1      │                  │
+│  │  Port 7: ET200SP I/O                          │                  │
 │  └────────┬──────────┬──────────┬────────────────┘                  │
 │           │          │          │                                   │
 │  ┌────────▼──────┐ ┌─▼──────────▼─┐ ┌────────────────┐             │
 │  │  PLC 1        │ │  PLC 2       │ │  ET200SP       │             │
 │  │  (Target)     │ │  (Attacker)  │ │  Remote I/O    │             │
-│  │  192.168.0.1  │ │ 192.168.0.20 │ │ 192.168.0.10   │             │
+│  │  192.168.0.1  │ │ 192.168.0.20 │ │ 192.168.0.3   │             │
 │  │               │ │              │ │                │             │
 │  │ S7-1516F-3    │ │ S7-1516F-3   │ │                │             │
 │  │ PN/DP         │ │ PN/DP        │ │                │             │
@@ -90,7 +85,7 @@ This phase validates Phase 1 findings using actual industrial hardware, demonstr
 │  │     Ubuntu IDS Server          │                                │
 │  │     192.168.0.30               │                                │
 │  │                                │                                │
-│  │  - Suricata 7.0.3              │                                │
+│  │  - Suricata 7.0.14             │                                │
 │  │  - Custom S7/PROFINET rules    │                                │
 │  │  - Python DCP Monitor          │                                │
 │  │  - EVEBox Dashboard            │                                │
@@ -109,7 +104,7 @@ This phase validates Phase 1 findings using actual industrial hardware, demonstr
 | **PLC (Target)** | Siemens S7-1516F-3 PN/DP | 1 | Motor simulation, attack target |
 | **PLC (Attacker)** | Siemens S7-1516F-3 PN/DP | 1 | Attack generation via PUT blocks |
 | **Remote I/O** | Siemens ET200SP | 1 | PROFINET cyclic communication |
-| **Switch** | SCALANCE X408-2 | 1 | Port mirroring for IDS |
+| **Switch** | SCALANCE XC-208  | 1 | Port mirroring for IDS |
 | **IDS Server** | Ubuntu 22.04 Desktop | 1 | Suricata + DCP monitor |
 | **Engineering PC** | Windows 11 | 1 | TIA Portal V17, PRONETA |
 
@@ -118,33 +113,33 @@ This phase validates Phase 1 findings using actual industrial hardware, demonstr
 **Step 1: PLC Connections**
 
 ```
-PLC1 Port X1 P1 → Switch Port 1
-PLC1 Port X1 P2 → ET200SP (PROFINET)
+PLC1 Port X1 P1 → Switch Port 4
+
 
 PLC2 Port X1 P1 → Switch Port 6
 
-ET200SP → PLC1 Port X1 P2
+ET200SP → Switch Port 7
 ```
 
 **Step 2: IDS Connection**
 
 ```
-Ubuntu eth0 → Switch Port 3 (SPAN destination)
+Ubuntu eth0 → Switch Port 1 (SPAN destination)
 ```
 
 **Step 3: Engineering PC**
 
 ```
-Windows PC → Switch Port 7 (or any available)
+Windows PC → Switch Port 8 (or any available)
 ```
 
 ---
 
 ### Network Configuration
 
-**Switch Configuration (SCALANCE X408-2):**
+**Switch Configuration (SCALANCE XC-208):**
 
-Access switch web interface: `http://192.168.0.254`
+Access switch web interface: `http://192.168.0.4`
 
 **Enable Port Mirroring:**
 ```
@@ -152,8 +147,8 @@ Access switch web interface: `http://192.168.0.254`
 2. Navigate to: System → Port Mirroring
 3. Create Mirror Session:
    - Session Name: IDS_Monitor
-   - Source Ports: Port 1, Port 6 (PLC1, PLC2)
-   - Destination Port: Port 3 (Ubuntu IDS)
+   - Source Ports: Port 4, Port 6 (PLC1, PLC2)
+   - Destination Port: Port 1 (Ubuntu IDS)
    - Direction: Both (RX + TX)
    - Filter: All Frames
 4. Apply and Save
@@ -161,8 +156,8 @@ Access switch web interface: `http://192.168.0.254`
 
 **Verify Mirroring:**
 ```
-Port 1 (PLC1)    → Traffic copied to → Port 3 (IDS)
-Port 6 (PLC2)    → Traffic copied to → Port 3 (IDS)
+Port 4 (PLC1)    → Traffic copied to → Port 1 (IDS)
+Port 6 (PLC2)    → Traffic copied to → Port 1 (IDS)
 ```
 
 ---
@@ -173,10 +168,10 @@ Port 6 (PLC2)    → Traffic copied to → Port 3 (IDS)
 |--------|-----------|--------|---------|
 | PLC1 | 192.168.0.1 | 255.255.255.0 | 192.168.0.254 |
 | PLC2 | 192.168.0.20 | 255.255.255.0 | 192.168.0.254 |
-| ET200SP | 192.168.0.10 | 255.255.255.0 | - |
+| ET200SP | 192.168.0.3 | 255.255.255.0 | - |
 | Ubuntu IDS | 192.168.0.30 | 255.255.255.0 | 192.168.0.1 |
-| Eng. PC | 192.168.0.107 | 255.255.255.0 | 192.168.0.254 |
-| Switch | 192.168.0.254 | 255.255.255.0 | - |
+| Eng. PC | 192.168.0.40 | 255.255.255.0 | 192.168.0.254 |
+| Switch | 192.168.0.4 | 255.255.255.0 | - |
 
 ---
 
@@ -184,15 +179,7 @@ Port 6 (PLC2)    → Traffic copied to → Port 3 (IDS)
 
 ### Ubuntu IDS Setup
 
-**Step 1: Install Operating System**
-
-```bash
-# Download Ubuntu 22.04 LTS Desktop
-# Install with default settings
-# Set static IP: 192.168.0.30
-```
-
-**Step 2: Configure Network**
+**Step 1: Network Configuration**
 
 ```bash
 sudo nano /etc/netplan/01-netcfg.yaml
@@ -202,107 +189,46 @@ sudo nano /etc/netplan/01-netcfg.yaml
 network:
   version: 2
   ethernets:
-    enp7s0:  # Your interface name (check with: ip a)
+    enp7s0:  # Your interface name
       dhcp4: no
       addresses: [192.168.0.30/24]
       gateway4: 192.168.0.1
-      nameservers:
-        addresses: [8.8.8.8, 8.8.4.4]
 ```
 
 ```bash
 sudo netplan apply
+sudo ip link set enp7s0 promisc on
+sudo ethtool -K enp7s0 rx off tx off gso off gro off tso off lro off
 ```
 
-**Step 3: Install Suricata**
+**Step 2: Install Suricata**
 
 ```bash
-# Add Suricata repository
 sudo add-apt-repository ppa:oisf/suricata-stable
 sudo apt update
+sudo apt install -y suricata tcpdump wireshark python3-pip
 
-# Install Suricata and tools
-sudo apt install -y suricata tcpdump wireshark python3-pip ethtool
-
-# Install Python dependencies
 pip3 install scapy python-snap7
 ```
 
-**Step 4: Enable Promiscuous Mode**
+**Step 3: Deploy Configuration Files**
 
 ```bash
-# Enable promiscuous mode (persist across reboots)
-sudo ip link set enp7s0 promisc on
-
-# Disable hardware offloading (important for IDS)
-sudo ethtool -K enp7s0 rx off tx off gso off gro off tso off lro off
-
-# Make persistent
-sudo nano /etc/rc.local
-```
-
-Add:
-```bash
-#!/bin/bash
-ip link set enp7s0 promisc on
-ethtool -K enp7s0 rx off tx off gso off gro off tso off lro off
-exit 0
-```
-
-```bash
-sudo chmod +x /etc/rc.local
-```
-
-**Step 5: Deploy Suricata Configuration**
-
-```bash
-# Copy configuration files (from repository)
+# Copy Suricata config
 sudo cp suricata.yaml /etc/suricata/
+
+# Copy rules
 sudo cp profinet.rules /etc/suricata/rules/
+
+# Copy Lua script
 sudo mkdir -p /etc/suricata/lua
 sudo cp detect_change.lua /etc/suricata/lua/
 
 # Test configuration
 sudo suricata -T -c /etc/suricata/suricata.yaml
-
-# Should show: "Configuration provided was successfully loaded"
 ```
 
-**Step 6: Setup DCP Monitor**
-
-```bash
-# Copy Python script
-sudo cp dcp_to_eve.py /opt/
-
-# Create systemd service
-sudo nano /etc/systemd/system/dcp-monitor.service
-```
-
-```ini
-[Unit]
-Description=PROFINET DCP Monitor for Suricata
-After=network.target suricata.service
-
-[Service]
-Type=simple
-User=root
-ExecStart=/usr/bin/python3 /opt/dcp_to_eve.py
-Restart=always
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-# Enable and start
-sudo systemctl daemon-reload
-sudo systemctl enable dcp-monitor
-sudo systemctl start dcp-monitor
-sudo systemctl status dcp-monitor
-```
-
-**Step 7: Start Suricata**
+**Step 4: Start Suricata**
 
 ```bash
 sudo systemctl restart suricata
@@ -314,259 +240,353 @@ sudo systemctl status suricata
 
 ## 🎛️ PLC Programming
 
-### PLC1 (Target) - TIA Portal Project
+### PLC1 (Target) - Program Structure
 
-**Program Structure:**
+**IP Address:** 192.168.0.1  
+**Purpose:** Receives attack commands and simulates motor
 
+#### **Data Blocks:**
+
+**DB2: Data_From_PLC2** (Receive buffer)
 ```
-PLC1_Project/
-├── DB2_Receive          # Commands from PLC2
-│   ├── Motor_ON_Cmd     (BOOL)
-│   ├── Speed_Setpoint   (INT, 0-3000 RPM)
-│   └── Remote_Control   (BOOL)
-├── DB3_Status           # Feedback to PLC2
-│   ├── Speed_Actual     (INT)
-│   ├── Motor_Running    (BOOL)
-│   ├── Current          (REAL)
-│   ├── Temperature      (REAL)
-│   └── Fault_Code       (INT)
-├── DB_Motor             # Motor simulation
-│   ├── Speed_Actual     (INT)
-│   ├── Current          (REAL)
-│   ├── Temperature      (REAL)
-│   ├── Max_Speed        (INT := 3000)
-│   └── Safety limits
-├── OB1                  # Main cycle
-├── FC_Motor_Simulation  # Motor control logic
-└── Connection_1         # S7 connection to PLC2
+Motor_ON      BOOL    Offset 0.0   (Start/Stop command)
+Motor_Speed   INT     Offset 2.0   (Target speed from PLC2)
 ```
 
-**Key Safety Features:**
-- Speed clamping: Values >3000 automatically limited
-- Fault detection: Overspeed, overtemp triggers alarm
-- Change counting: Rapid changes logged
+**DB4: Normal Operation** (Motor state)
+```
+Motor Speed           INT    Start: 0      (Current motor speed)
+Motor Direction       BOOL   Start: false  (Oscillation direction)
+Max Speed Limit       INT    Start: 1500   (Safety limit)
+Min Speed Limit       INT    Start: 500    (Minimum speed)
+ALARM TRIGGER         BOOL   Start: false  (Overspeed alarm)
+```
 
-**Download to PLC1:**
-1. Open TIA Portal project
-2. Set PLC IP: 192.168.0.1
-3. Compile and download
-4. Switch to RUN mode
+**DB3: Block_1_DB** (GET instance DB)
+
+#### **Function Blocks:**
+
+**FB1: GET Communication** (Receive data from PLC2)
+- Language: LAD (Ladder Logic)
+- Trigger: Clock_0.5Hz (%M0.7)
+- Connection ID: W#16#100
+- Source: PLC2 DB2 (192.168.0.20)
+- Destination: PLC1 DB6 (local buffer)
+- Data: 4 bytes (Motor_ON + Motor_Speed)
+
+**FB2: Operation** (Motor simulation logic)
+- Language: SCL (Structured Control Language)
+- Functions:
+  - Normal motor operation (speed oscillation)
+  - Safety limit checking
+  - Alarm triggering for overspeed
+
+**Key SCL Logic (FB2):**
+```scl
+// Normal operation
+IF Data_From_PLC2.Motor_ON = TRUE 
+   AND Data_From_PLC2.Motor_Speed < Max_Speed_Limit 
+   AND Data_From_PLC2.Motor_Speed >= Min_Speed_Limit THEN
+    
+    // Oscillate motor speed
+    IF Motor_Direction = FALSE THEN
+        Motor_Speed := Motor_Speed + 10;
+    ELSE
+        Motor_Speed := Motor_Speed - 10;
+    END_IF;
+END_IF;
+
+// Safety check
+IF Data_From_PLC2.Motor_Speed >= Max_Speed_Limit THEN
+    ALARM_TRIGGER := TRUE;
+    Motor_Speed := 0;  // Emergency stop
+END_IF;
+```
+
+**OB1: Main** (Main cycle)
+- Network 1: Basic I/O
+- Network 2: Call FB1 (GET Communication)
+- Network 3: Call FB2 (Operation)
 
 ---
 
-### PLC2 (Attacker) - TIA Portal Project
+### PLC2 (Attacker) - Program Structure
 
-**Program Structure:**
+**IP Address:** 192.168.0.20  
+**Purpose:** Sends malicious commands to PLC1
 
+#### **Data Blocks:**
+
+**DB2: Data_to_PLC1** (Transmit buffer)
 ```
-PLC2_Project/
-├── DB2_Commands         # Commands to send
-│   ├── Motor_ON         (BOOL)
-│   ├── Speed_Setpoint   (INT)
-│   └── Remote_Control   (BOOL)
-├── DB3_Feedback         # Status from PLC1
-│   ├── Speed_Actual     (INT)
-│   ├── Motor_Running    (BOOL)
-│   └── Fault_Code       (INT)
-├── DB_Attack_Control    # Attack configuration
-│   ├── Attack_Enable    (BOOL)
-│   ├── Attack_Type      (INT, 0-4)
-│   ├── Overspeed_Value  (INT := 3500)
-│   ├── Rapid_Values     (Array[1..6] of INT)
-│   └── DoS_Count        (INT)
-├── OB1                  # Main cycle with PUT/GET
-├── FC_Attack_Overspeed  # Attack 1
-├── FC_Attack_Rapid      # Attack 2
-└── FC_Attack_DoS        # Attack 3
+Motor_ON      BOOL   Offset 0.0   Start: true   (Motor enable)
+Motor_Speed   INT    Offset 2.0   Start: 500    (Normal speed)
 ```
 
-**S7 Connection Configuration:**
+**DB4: attack_input** (Attack configuration)
 ```
-Connection ID: 1
-Local: PLC2 (192.168.0.20)
-Partner: PLC1 (192.168.0.1)
-Type: S7 connection
+Control_value_exceed  BOOL   Start: false  (Attack 1 trigger)
+Control_value         INT    Start: 2000   (Overspeed value)
+Rapid_value_change    BOOL   Start: false  (Attack 2 trigger)
 ```
 
-**Download to PLC2:**
-1. Open TIA Portal project
-2. Set PLC IP: 192.168.0.20
-3. Establish connection to PLC1
-4. Compile and download
-5. Switch to RUN mode
+**DB3: PUT_Data_Block** (PUT instance DB)
+
+#### **Function Blocks:**
+
+**FB1: PUT_Communication** (Send data to PLC1)
+- Language: LAD
+- Normal Trigger: Clock_5Hz (%M0.1) - for value changes
+- DoS Trigger: REQ_Toggle (%M4.0) - for rapid flooding
+- Connection ID: W#16#100
+- Source: PLC2 DB2
+- Destination: PLC1 DB2 (192.168.0.1)
+- Data: 4 bytes
+
+**FB2: Attacks** (Attack logic)
+- Language: LAD + SCL
+- Network 1: Attack 1 - Control Value Exceed
+- Network 2: Attack 2 - Rapid Setpoint Changes
+
+**Attack 1 Logic (Network 1):**
+```
+IF Control_value_exceed = TRUE THEN
+    Data_to_PLC1.Motor_Speed := Control_value (2000 RPM)
+ELSE
+    Data_to_PLC1.Motor_Speed := Default_Speed (500 RPM)
+END_IF
+```
+
+**Attack 2 Logic (Network 2 - SCL):**
+```scl
+IF Rapid_value_change THEN
+    Data_to_PLC1.Motor_Speed := Data_to_PLC1.Motor_Speed + 100;
+END_IF;
+
+IF Data_to_PLC1.Motor_Speed > 1400 AND Rapid_value_change THEN
+    Data_to_PLC1.Motor_Speed := 800;
+END_IF;
+```
+
+**OB1: Main** (Main cycle)
+- Network 1: Basic I/O
+- Network 2: Call FB1 (PUT Communication)
+- Network 3: Call FB2 (Attacks)
 
 ---
 
-## ⚔️ Attack Execution
+### S7 Connection Configuration
+
+**In TIA Portal - Network View:**
+
+1. Drag connection between PLC1 and PLC2
+2. Properties:
+   ```
+   Name: PLC2_to_PLC1
+   Type: S7 connection
+   ID: W#16#100 (256 decimal)
+   
+   Local Device: PLC2 (192.168.0.20)
+   Partner: PLC1 (192.168.0.1)
+   ```
+
+3. Verify connection:
+   - Online & Diagnostics → Communications
+   - Connection should show "Established"
+
+---
+
+## ⚔️ Attack Scenarios
 
 ### Pre-Attack Checklist
 
 ```bash
 # 1. Verify IDS is running
 sudo systemctl status suricata
-sudo systemctl status dcp-monitor
 
-# 2. Verify port mirroring
-sudo tcpdump -i enp7s0 -c 10 tcp port 102
-# Should see traffic from both 192.168.0.1 and 192.168.0.20
-
-# 3. Start monitoring (separate terminal)
+# 2. Start monitoring
 sudo tail -f /var/log/suricata/fast.log
+
+# 3. Verify port mirroring
+sudo tcpdump -i enp7s0 -c 10 tcp port 102
 ```
 
 ---
 
-### Attack 1: Motor Overspeed
+### **Attack 1: Motor Overspeed (Control Value Exceed)**
 
-**Method: TIA Portal Watch Table**
+**Attack Method:** Exceeding PLC1 safety limit
 
-1. Open TIA Portal → Connect to PLC2
+**Implementation:** TIA Portal Watch Table
+
+**Steps:**
+
+1. Open TIA Portal → Online → PLC2
 2. Open Watch Table
-3. Add variables:
-   ```
-   DB_Attack_Control.Attack_Enable
-   DB_Attack_Control.Attack_Type
-   DB_Attack_Control.Overspeed_Value
-   ```
-4. Modify values:
-   ```
-   Attack_Enable = TRUE
-   Attack_Type = 1
-   Overspeed_Value = 3500
-   ```
+3. Add variable: `DB4.Control_value_exceed`
+4. Modify value: `TRUE`
 5. Click "Modify All"
 
-**Expected Timeline:**
+**What Happens:**
+
 ```
-T+0s:  Attack enabled
-T+1s:  PLC2 sends PUT with Speed=3500
-T+1s:  IDS Alert: SID 800005 "Motor Overspeed >1500 RPM"
-T+1s:  PLC1 clamps to 3000, sets Fault_Code=1
+Timeline:
+T+0s:  Control_value_exceed set to TRUE
+T+0s:  FB2 sets Motor_Speed := 2000 (from Control_value)
+T+0.2s: PUT block sends 2000 RPM to PLC1
+T+0.2s: IDS Alert: SID 800005 "Motor Overspeed >1500 RPM"
+T+0.3s: PLC1 receives value
+T+0.3s: PLC1 safety check: 2000 > 1500 (Max_Speed_Limit)
+T+0.3s: PLC1 ALARM_TRIGGER := TRUE
+T+0.3s: PLC1 Motor_Speed := 0 (Emergency stop)
 ```
+
+**Expected IDS Alert:**
+```
+[**] [1:800005:1] Motor Overspeed >1500 RPM Detected [**]
+Priority: 1
+192.168.0.20:xxxxx -> 192.168.0.1:102
+```
+
+**PLC1 Response:**
+- `Normal Operation.ALARM TRIGGER FOR SPEED LIMIT EXCEED` = TRUE
+- Motor stopped (Speed = 0)
+- Alarm visible in TIA Portal online view
 
 **Verification:**
 ```bash
-# Check IDS alert
 sudo grep "800005" /var/log/suricata/fast.log
-
-# Expected:
-# [**] [1:800005:1] Motor Overspeed >1500 RPM Detected [**]
 ```
 
 ---
 
-### Attack 2: Rapid Speed Changes
+### **Attack 2: Rapid Setpoint Changes**
 
-**Method: TIA Portal Watch Table**
+**Attack Method:** Rapid speed oscillations causing process instability
 
-1. Watch Table → PLC2
-2. Set values:
-   ```
-   Attack_Enable = TRUE
-   Attack_Type = 3
-   Rapid_Delay = T#500MS
-   ```
-3. Modify All
+**Implementation:** TIA Portal Watch Table
 
-**Attack Behavior:**
+**Steps:**
+
+1. Open Watch Table → PLC2
+2. Add variable: `DB4.Rapid_value_change`
+3. Modify value: `TRUE`
+4. Observe PLC1 motor speed oscillating
+
+**What Happens:**
+
 ```
-T+0.0s: Speed = 1000 RPM
-T+0.5s: Speed = 2500 RPM (Change: +1500) → Alert!
-T+1.0s: Speed = 500 RPM  (Change: -2000) → Alert!
-T+1.5s: Speed = 2800 RPM (Change: +2300) → Alert!
-T+2.0s: Speed = 1200 RPM
-T+2.5s: Speed = 2600 RPM
-T+3.0s: Attack complete
+Cycle 1: Speed = 500 (initial)
+Cycle 2: Speed = 500 + 100 = 600
+Cycle 3: Speed = 600 + 100 = 700
+...
+Cycle N: Speed = 1400 + 100 = 1500
+Next:    Speed > 1400 → Reset to 800
+Cycle N+1: Speed = 800
+Cycle N+2: Speed = 800 + 100 = 900
+...
+Pattern repeats: 500→1500, jump to 800, repeat
 ```
 
-**Expected IDS Alerts:**
+**Attack Pattern:**
+- Increments by 100 RPM each cycle
+- When >1400: Sudden drop to 800 RPM
+- Creates rapid oscillation
+
+**Expected IDS Alert:**
 ```
-[**] [1:3200003:1] Rapid Speed Change Detected [**]  (Lua script)
-[**] [1:3200003:1] Rapid Speed Change Detected [**]  (2nd change)
-[**] [1:3200003:1] Rapid Speed Change Detected [**]  (3rd change)
+[**] [1:3200003:1] Rapid Speed Change Detected [**]
+Priority: 1
+192.168.0.20:xxxxx -> 192.168.0.1:102
 ```
+
+**Lua Script Detection:**
+- Tracks speed changes >100 RPM
+- Triggers if 3+ changes within 10 seconds
+- Resets counter after trigger
 
 **Verification:**
 ```bash
+# Watch real-time
+sudo tail -f /var/log/suricata/fast.log | grep "3200003"
+
+# Count total alerts
 sudo grep "3200003" /var/log/suricata/fast.log | wc -l
-# Should show: 3 or more alerts
 ```
 
 ---
 
-### Attack 3: DoS Connection Flood
+### **Attack 3: DoS Connection Flood**
 
-**Method: TIA Portal Watch Table**
+**Attack Method:** Rapid S7 Communication requests overwhelming PLC1
 
-1. Watch Table → PLC2
-2. Set values:
-   ```
-   Attack_Enable = TRUE
-   Attack_Type = 4
-   DoS_MaxConnections = 50
-   ```
+**Implementation:** Python script (dos_attack.py)
 
-**Attack Behavior:**
-- PLC2 establishes 50 rapid TCP connections to PLC1:102
-- Connections left open (no disconnect)
-- PLC1 CPU load increases
+```bash
+# From Ubuntu IDS or external PC
+python3 dos_attack.py
+```
+
+**Script Behavior:**
+- Spawns 30 threads
+- Each thread: Connect → Read DB2 → Modify → Write → Disconnect
+- 50 operations per connection
+- Extremely aggressive
+
 
 **Expected IDS Alert:**
 ```
 [**] [1:1000005:1] S7comm Potential DoS (Connection Flood) [**]
 Priority: 1
-192.168.0.20:multiple → 192.168.0.1:102
+Threshold: 50 SYN packets in 5 seconds
+```
+
+**PLC1 Impact:**
+- Communication load: PLC Connection increase visible in diagnostics
+- Cycle time may increase
+- Verify Latency using python script.
+```bash
+# From Ubuntu IDS or external PC
+python3 monitor_latency.py
 ```
 
 **Verification:**
 ```bash
-# Count alerts
+# IDS alerts
 sudo grep "1000005" /var/log/suricata/fast.log
 
-# Check PLC1 connections (from TIA Portal online diagnostics)
-# Should show 50+ active connections
+# Network traffic
+sudo tcpdump -i enp7s0 tcp port 102 -c 100 | grep "192.168.0.20"
 ```
-
-**PLC Impact Measurement:**
-- TIA Portal → PLC1 → Online & Diagnostics
-- View CPU load: Should increase to 15-20% during attack
-- Normal: 5-10% CPU
 
 ---
 
-### Attack 4: PROFINET DCP Set-Name
+### **Attack 4: Replay Attack**
 
-**Method: PRONETA Tool**
+**Attack Method:** Replaying Packet Captured by Wireshark
 
-1. Open PRONETA on Engineering PC
-2. Click "Network Analysis"
-3. Scan network
-4. Find PLC1 (192.168.0.1)
-5. Right-click → "Set Name of Station"
-6. Enter new name: `hacked-plc-malicious`
-7. Click "Set Name"
+**Implementation:** Python script (Replay_attack.py)
 
-**Expected IDS Alert:**
+
+**Replay Attack (Replay_attack.py)**
+
+```bash
+python3 Replay_attack.py
 ```
-PROFINET DCP: Set Name of Station Attempt
-Source MAC: xx:xx:xx:xx:xx:xx
-Device Name: hacked-plc-malicious
-Priority: 1
-```
+
+**Script Behavior:**
+- Replays captured S7 Write packet
+- Changes speed value to 3000 RPM (0x0B B8)
+- Spoofs unauthorized source
+
+**Detection:**
+- Rule checks: source IP != 192.168.0.20
+- Any non-PLC2 source triggers alert
+- Threshold: 1 per 60 seconds
 
 **Verification:**
 ```bash
-# Check DCP monitor log
-sudo journalctl -u dcp-monitor -n 20
-
-# Check Suricata EVE log
-sudo cat /var/log/suricata/eve.json | jq 'select(.alert.signature_id==8000001)'
-```
-
-**Alternative: Manual DCP Attack (Python)**
-```bash
-# On Ubuntu IDS or any PC
-python3 dcp_attack.py --target 192.168.0.1 --name "evil-device"
+sudo grep "1000028" /var/log/suricata/fast.log
 ```
 
 ---
@@ -575,19 +595,19 @@ python3 dcp_attack.py --target 192.168.0.1 --name "evil-device"
 
 ### Real-Time Monitoring
 
-**Terminal 1: Fast Log (Real-time alerts)**
+**Terminal 1: Fast Log (Alerts)**
 ```bash
 sudo tail -f /var/log/suricata/fast.log
 ```
 
-**Terminal 2: DCP Monitor**
-```bash
-sudo journalctl -u dcp-monitor -f
-```
-
-**Terminal 3: EVE JSON (Detailed)**
+**Terminal 2: EVE JSON (Detailed)**
 ```bash
 sudo tail -f /var/log/suricata/eve.json | jq 'select(.event_type=="alert")'
+```
+
+**Terminal 3: Suricata Stats**
+```bash
+sudo tail -f /var/log/suricata/stats.log
 ```
 
 ---
@@ -606,109 +626,79 @@ sudo grep -o "\[1:[0-9]*:[0-9]*\]" /var/log/suricata/fast.log | sort | uniq -c
 
 **Expected output after all attacks:**
 ```
-      1 [1:800005:1]     # Overspeed
-      3 [1:3200003:1]    # Rapid changes (Lua)
-      1 [1:1000005:1]    # DoS flood
-      1 [1:8000001:1]    # DCP Set-Name
+      5 [1:800005:1]     # Overspeed (if value set multiple times)
+     12 [1:3200003:1]    # Rapid changes (multiple triggers)
+      3 [1:1000005:1]    # DoS flood
+      1 [1:1000028:2]    # Unauthorized write
 ```
 
-**View specific attack:**
+**View specific attack with timestamps:**
 ```bash
-# Overspeed details
+# Overspeed with time
 sudo grep "800005" /var/log/suricata/fast.log
 
-# Rapid changes with timestamps
-sudo grep "3200003" /var/log/suricata/fast.log | head -5
+# Rapid changes timeline
+sudo grep "3200003" /var/log/suricata/fast.log | head -10
 
-# DoS with source IPs
-sudo grep "1000005" /var/log/suricata/fast.log
+# Unauthorized access
+sudo grep "1000028" /var/log/suricata/fast.log
 ```
 
-**Export for analysis:**
+**Export for thesis:**
 ```bash
 # Create reports directory
-mkdir -p ~/ids_reports
+mkdir -p ~/thesis_data
 
-# Export alerts
-sudo cp /var/log/suricata/fast.log ~/ids_reports/alerts_$(date +%Y%m%d_%H%M%S).log
-sudo cp /var/log/suricata/eve.json ~/ids_reports/events_$(date +%Y%m%d_%H%M%S).json
+# Export all alerts
+sudo cp /var/log/suricata/fast.log ~/thesis_data/alerts_$(date +%Y%m%d_%H%M%S).log
 
-# Export PCAP (if enabled)
-sudo cp /var/log/suricata/log.pcap ~/ids_reports/capture_$(date +%Y%m%d_%H%M%S).pcap
+# Export JSON events
+sudo cp /var/log/suricata/eve.json ~/thesis_data/events_$(date +%Y%m%d_%H%M%S).json
+
+# Export PCAP if enabled
+sudo cp /var/log/suricata/log.pcap ~/thesis_data/traffic_$(date +%Y%m%d_%H%M%S).pcap
 ```
 
----
 
-### EVEBox Dashboard (Optional)
 
-**Install EVEBox:**
+### Data Collection for Thesis
+
+**Capture Traffic During Attacks:**
+
 ```bash
-wget https://evebox.org/files/release/latest/evebox-latest-linux-x64.zip
-unzip evebox-latest-linux-x64.zip
-sudo mv evebox /usr/local/bin/
+# Start capture before attack
+sudo tcpdump -i enp7s0 -w attack1_overspeed.pcap tcp port 102
+
+# Trigger attack from PLC2
+
+# Stop capture (Ctrl+C)
+
+# Analyze with Wireshark
+wireshark attack1_overspeed.pcap
 ```
 
-**Run EVEBox:**
-```bash
-evebox -D /var/log/suricata
+**Wireshark Filters:**
+```
+s7comm                    # All S7 communication
+s7comm.data.value         # Show data values
+tcp.port==102             # S7 traffic only
+ip.addr==192.168.0.20     # Only attacker traffic
 ```
 
-**Access Dashboard:**
-```
-http://192.168.0.30:5636
-```
+**Extract Speed Values:**
 
-**Features:**
-- Real-time alert visualization
-- Attack timeline
-- Source/destination heatmaps
-- Alert severity breakdown
-- Export reports
+In Wireshark:
+1. Filter: `s7comm.param.func == 0x05` (Write Var)
+2. Follow → TCP Stream
+3. Look for speed values in hex
+4. Document: Normal vs Attack values
 
----
-
-## 📈 Results Analysis
-
-### Performance Metrics
-
-**PLC1 Impact During Attacks:**
-
-| Attack | CPU Load | Memory | Network | Response Time |
-|--------|----------|--------|---------|---------------|
-| Normal | 5-10% | 45MB | Low | <5ms |
-| Overspeed | 8-12% | 46MB | Low | <10ms |
-| Rapid Changes | 10-15% | 47MB | Medium | <15ms |
-| DoS Flood | 15-20% | 52MB | High | 50-100ms |
-
-**IDS Performance:**
-
-| Metric | Value |
-|--------|-------|
-| Alert Latency | <100ms (S7), <500ms (DCP) |
-| False Positives | <1% during normal ops |
-| Detection Rate | 95-100% |
-| CPU Usage | 10-15% average |
-| Network Overhead | <2% (passive) |
-
----
-
-### Data Collection
-
-**Capture Traffic:**
-```bash
-# During attacks, capture packets
-sudo tcpdump -i enp7s0 -w attack_$(date +%Y%m%d_%H%M%S).pcap tcp port 102 or ether proto 0x8892
-```
-
-**Analyze with Wireshark:**
-```bash
-wireshark attack_*.pcap
-
-# Useful filters:
-s7comm              # S7 communication
-pn_dcp              # PROFINET DCP
-tcp.port==102       # S7 traffic only
-```
+**Screenshot Checklist:**
+- [ ] TIA Portal watch table (attack triggers)
+- [ ] PLC1 online diagnostics (CPU load)
+- [ ] Suricata alerts (fast.log)
+- [ ] Wireshark packet analysis
+- [ ] EVEBox dashboard (if used)
 
 ---
 
@@ -719,142 +709,157 @@ tcp.port==102       # S7 traffic only
 **Check 1: Suricata running?**
 ```bash
 sudo systemctl status suricata
-sudo tail -f /var/log/suricata/suricata.log | grep -i error
+sudo tail -20 /var/log/suricata/suricata.log
 ```
 
-**Check 2: Port mirroring active?**
-```bash
-# Should see traffic from BOTH PLCs
-sudo tcpdump -i enp7s0 -c 20 | grep "192.168.0.1\|192.168.0.20"
-```
-
-**Check 3: Rules loaded?**
+**Check 2: Rules loaded?**
 ```bash
 sudo suricata -T -c /etc/suricata/suricata.yaml 2>&1 | grep "rules successfully loaded"
+# Should show: "5 rules successfully loaded"
 ```
 
-**Check 4: Interface in promiscuous mode?**
+**Check 3: Port mirroring active?**
 ```bash
-ip link show enp7s0 | grep PROMISC
+sudo tcpdump -i enp7s0 -c 20 tcp port 102
+# Should see traffic from BOTH 192.168.0.1 and 192.168.0.20
+```
+
+**Check 4: Lua script accessible?**
+```bash
+ls -la /etc/suricata/lua/detect_change.lua
+# File must exist and be readable
 ```
 
 ---
 
 ### Issue 2: PLC Communication Fails
 
-**Verify network:**
-```bash
-ping 192.168.0.1   # PLC1
-ping 192.168.0.20  # PLC2
+**Verify S7 connection:**
+
+In TIA Portal:
+```
+1. PLC2 → Online & Diagnostics
+2. Communications → Connections
+3. Check Connection_1 status
+4. Should show: "Established"
 ```
 
-**Test S7 connection (from PLC2):**
-- TIA Portal → PLC2 → Online & Diagnostics
-- Communications → Connections
-- Should show "Connection_1" as "Established"
-
-**Check firewall (PLC):**
-- Device configuration → Protection
-- Ensure S7 communication is allowed
+**If connection failed:**
+- Verify IP addresses correct
+- Check network cable
+- Ping test: `ping 192.168.0.1` from engineering PC
+- Rebuild connection in Network View
 
 ---
 
-### Issue 3: DCP Not Detected
+### Issue 3: PUT/GET Not Working
 
-**Verify DCP monitor:**
-```bash
-sudo systemctl status dcp-monitor
-sudo journalctl -u dcp-monitor -n 50
+**Check GET block (PLC1):**
+```
+1. Watch GET instance DB (DB3)
+2. Monitor:
+   - NDR (New Data Received) - should toggle
+   - ERROR - should be FALSE
+   - STATUS - should be 0x0000
 ```
 
-**Test DCP traffic manually:**
-```bash
-sudo tcpdump -i enp7s0 ether proto 0x8892 -c 10
-# Trigger DCP from PRONETA
+**Check PUT block (PLC2):**
+```
+1. Watch PUT instance DB (DB3)
+2. Monitor:
+   - DONE - should toggle on completion
+   - ERROR - should be FALSE
+   - STATUS - should be 0x0000
 ```
 
-**Check Python dependencies:**
+**Common errors:**
+- STATUS = 0x8xxx → Connection problem
+- STATUS = 0x80C4 → Target address invalid
+- NDR never toggles → GET not receiving data
+
+---
+
+### Issue 4: Attacks Not Triggering
+
+**Attack 1 (Overspeed):**
+- Verify `Control_value_exceed` = TRUE in DB4
+- Check `Control_value` = 2000
+- Monitor `Data_to_PLC1.Motor_Speed` - should change to 2000
+
+**Attack 2 (Rapid Changes):**
+- Set `Rapid_value_change` = TRUE
+- Watch `Data_to_PLC1.Motor_Speed` - should increment
+- If stuck: Check SCL code in FB2 Network 2
+
+**Attack 3 (DoS):**
+- Set `DOS attack` = TRUE
+- Verify PUT REQ is connected to Clock_5Hz
+- Check network traffic increase with tcpdump
+
+---
+
+## 📚 Additional Tools
+
+### Latency Monitoring Script
+
+**monitor_latency.py** - Measures PLC response time during DoS:
+
 ```bash
-python3 -c "from scapy.all import *; print('Scapy OK')"
+python3 monitor_latency.py
+```
+
+**Output:**
+```
+⏱️ PLC Response Latency: 12.34 ms  (normal)
+⏱️ PLC Response Latency: 156.78 ms (during DoS)
+⚠️ PLC is dropping packets (Timeout)
+```
+
+**Use this to demonstrate DoS impact in thesis.**
+
+---
+
+### Replay Attack Tool
+
+**Replay_attack.py** - Inject captured S7 packets:
+
+```bash
+python3 Replay_attack.py
+```
+
+**Customization:**
+```python
+# Change target
+plc_ip = "192.168.0.1"
+
+# Modify speed value (hex)
+# 1500 RPM = 0x05DC
+# 2000 RPM = 0x07D0
+# 3000 RPM = 0x0BB8
+attack_hex = "...05dc"  # Change last 4 digits
 ```
 
 ---
 
-### Issue 4: Attacks Don't Execute
-
-**PLC2 Watch Table shows errors:**
-- Check S7 connection is established
-- Verify PLC2 is in RUN mode
-- Check DB_Attack_Control variables are visible
-
-**PUT block errors:**
-- Check Connection ID = 1
-- Verify target address: P#DB2.DBX0.0
-- Check data types match
-
----
-
-## 📚 Next Steps
+## 🤝 Next Steps
 
 ### Extend the Laboratory
 
-**Add New Attacks:**
-1. Modbus TCP attacks
-2. DNP3 protocol manipulation
-3. Multi-stage attack chains
-4. Stuxnet-style sequences
+1. **Additional PLC Vendors:**
+   - Allen-Bradley CompactLogix
+   - Schneider Electric M580
 
-**Improve Detection:**
-1. Machine learning anomaly detection
-2. Behavioral analysis
-3. Protocol state machine validation
-4. Honeypot integration
+2. **More Protocols:**
+   - Modbus TCP attacks
+   - DNP3 manipulation
 
-**Integration:**
-1. SIEM connection (Splunk, ELK)
-2. Automated response (firewall rules)
-3. Alerting (email, SMS)
-4. Incident playbooks
+3. **Advanced Detection:**
+   - Machine learning anomaly detection
+   - Behavioral analysis
 
----
-
-## 📝 Documentation for Thesis
-
-**Data to Collect:**
-
-1. **PCAP Files** - Network captures of each attack
-2. **IDS Logs** - fast.log, eve.json for all tests
-3. **PLC Diagnostics** - CPU load, memory, connection count
-4. **Screenshots** - TIA Portal, EVEBox, alerts
-5. **Timing Data** - Attack start → Alert latency
-6. **Comparison Table** - Phase 1 vs Phase 2 results
-
-**Metrics to Report:**
-
-- Detection Rate: X% of attacks detected
-- False Positive Rate: Y alerts during normal ops
-- Response Time: Average Z ms from attack to alert
-- Performance Impact: PLC CPU increase, IDS load
-- Coverage: Which attacks detected, which missed
-
----
-
-## 🤝 Contributing
-
-Improvements for Phase 2:
-
-- [ ] Additional PLC vendors (Allen-Bradley, Schneider)
-- [ ] More attack scenarios
-- [ ] Automated testing scripts
-- [ ] Performance benchmarking tools
-
----
-
-## 📞 Support
-
-**Hardware Issues:** Check equipment manuals
-**Software Issues:** [GitHub Issues](https://github.com/yourusername/ot-security-lab/issues)
-**PLC Programming:** TIA Portal documentation
+4. **Integration:**
+   - SIEM (Splunk, ELK)
+   - Automated response (firewall rules)
 
 ---
 
@@ -862,6 +867,6 @@ Improvements for Phase 2:
 
 **[← Phase 1 (Docker)](../Phase1-Docker-Simulation/README.md)** | **[Main README](../README.md)**
 
-**Thesis-Ready Industrial Cybersecurity Laboratory**
+**Real Hardware Industrial OT-security Laboratory**
 
 </div>

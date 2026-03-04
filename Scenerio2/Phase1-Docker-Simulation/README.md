@@ -21,11 +21,11 @@ This phase uses Docker containers to simulate a complete OT environment without 
 ## 🎯 Overview
 
 **What This Phase Provides:**
-- ✅ Simulated Siemens S7 PLC with motor control
-- ✅ HMI container with 4 attack scenarios
-- ✅ Suricata IDS with custom rules
-- ✅ Isolated Docker network
-- ✅ Real-time alert monitoring
+-  Simulated Siemens S7 PLC with motor control
+-  HMI container with 4 attack scenarios
+-  Suricata IDS with custom rules
+-  Isolated Docker network
+-  Real-time alert monitoring
 
 **Limitations vs Real Hardware:**
 - ⚠️ Layer 2 DCP not fully realistic (Docker network constraints)
@@ -44,16 +44,16 @@ This phase uses Docker containers to simulate a complete OT environment without 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│         Docker Network: ot_network (192.168.100.0/24)       │
+│         Docker Network: ot_network (192.168.100.0/24)        │
 │                                                              │
-│  ┌──────────────┐         ┌─────────────┐   ┌───────────┐  │
-│  │     HMI      │◄────────│     IDS     │──►│    PLC    │  │
-│  │ Attack Gen   │  Monitor│  Suricata   │   │ Simulated │  │
-│  │ .100.20      │         │   .100.5    │   │  .100.10  │  │
-│  └──────────────┘         └─────────────┘   └───────────┘  │
+│  ┌──────────────┐         ┌─────────────┐   ┌───────────┐    │
+│  │     HMI      │◄────────│     IDS     │──►│    PLC    │    │
+│  │ Attack Gen   │  Monitor│  Suricata   │   │ Simulated │    │
+│  │192.168.100.20      │   │ 192.168.100.5   │ 192.168.100.10 │  
+│  └──────────────┘         └─────────────┘   └───────────┘    │
 │         │                        │                  │        │
-│    Sends attacks          Detects threats    Receives       │
-│    (S7 writes, DoS)      (Custom rules)      commands       │
+│    Sends attacks          Detects threats    Receives        │
+│    (S7 writes, DoS)      (Custom rules)      commands        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -98,8 +98,8 @@ docker-compose --version
 ### Step 1: Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/ot-security-lab.git
-cd ot-security-lab/Phase1-Docker-Simulation
+git clone https://github.com/Pratheek19014/OT_Security.git
+cd Scenerio2/Phase1-Docker-Simulation
 ```
 
 ### Step 2: Build Containers
@@ -509,7 +509,7 @@ docker system prune -a --volumes
 
 After mastering Phase 1, proceed to:
 
-**[Phase 2: Real Hardware Laboratory →](../Phase2-Real-Lab/README.md)**
+**[Phase 2: Real Hardware Laboratory →](../Phase2-Laboratory-Experiment/README.md)**
 
 This will teach you:
 - Working with physical Siemens PLCs
@@ -539,6 +539,6 @@ Found an issue or want to improve the simulation?
 
 <div align="center">
 
-**[← Back to Main README](../README.md)** | **[Phase 2 (Real Lab) →](../Phase2-Real-Lab/README.md)**
+**[← Back to Main README](../README.md)** | **[Phase 2 (Real Lab) →](../Phase2-Laboratory-Experiment/README.md)**
 
 </div>
