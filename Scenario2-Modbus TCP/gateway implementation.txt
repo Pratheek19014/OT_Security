@@ -1,0 +1,98 @@
+import socket
+import threading
+import logging
+import time
+from collections import defaultdict
+
+PLC_HOST = "127.0.0.1"
+PLC_PORT = 5020
+
+GATEWAY_HOST = "127.0.0.1"
+GATEWAY_PORT = 5021
+
+BLOCKED_FUNCTION_CODES = [5, 6, 16]
+
+ALLOWED_IPS = ["127.0.0.1"]  
+
+RATE_LIMIT = 20
+TIME_WINDOW = 5
+
+logging.basicConfig(level=logging.INFO)
+
+request_tracker = defaultdict(list)
+
+
+def handle_client(client_socket, addr):
+
+    client_ip = addr[0]
+
+    # 🔐 IP Allowlist
+    if client_ip not in ALLOWED_IPS:
+        logging.warning(f"🚫 Unauthorized IP: {client_ip}")
+        client_socket.close()
+        return
+
+    logging.info(f"🔌 Authorized connection from {client_ip}")
+
+    plc_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    plc_socket.connect((PLC_HOST, PLC_PORT))
+
+    while True:
+        try:
+            data = client_socket.recv(1024)
+            if not data:
+                break
+
+            current_time = time.time()
+
+            # 🛡 Rate Limit
+            request_tracker[client_ip] = [
+                t for t in request_tracker[client_ip]
+                if current_time - t < TIME_WINDOW
+            ]
+
+            request_tracker[client_ip].append(current_time)
+
+            if len(request_tracker[client_ip]) > RATE_LIMIT:
+                logging.error(f"⚠ DoS detected from {client_ip}")
+                client_socket.close()
+                break
+
+            function_code = data[7]
+
+            logging.info(f"📩 Function Code: {function_code}")
+
+            # 🚨 Block write
+            if function_code in BLOCKED_FUNCTION_CODES:
+                logging.warning("🚨 BLOCKED WRITE ATTEMPT")
+                continue
+
+            plc_socket.send(data)
+            response = plc_socket.recv(1024)
+
+            client_socket.send(response)
+
+        except Exception as e:
+            logging.error(f"Error: {e}")
+            break
+
+    client_socket.close()
+    plc_socket.close()
+
+
+def start_gateway():
+
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((GATEWAY_HOST, GATEWAY_PORT))
+    server.listen(5)
+
+    logging.info(f"🛡 Secure Monitoring Gateway running on port {GATEWAY_PORT}")
+
+    while True:
+        client_socket, addr = server.accept()
+        thread = threading.Thread(target=handle_client, args=(client_socket, addr))
+        thread.start()
+
+
+if __name__ == "__main__":
+    start_gateway()
