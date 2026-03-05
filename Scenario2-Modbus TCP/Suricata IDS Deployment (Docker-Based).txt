@@ -1,0 +1,3 @@
+docker run -d --name suricata \
+ 	--net=host \ 
+	jasonish/suricata 
