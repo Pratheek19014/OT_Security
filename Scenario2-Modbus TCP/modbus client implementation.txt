@@ -1,0 +1,19 @@
+from pymodbus.client.sync import ModbusTcpClient
+
+client = ModbusTcpClient("127.0.0.1", port=5021)
+
+print("Connecting...")
+client.connect()
+
+print("Trying WRITE...")
+client.write_register(10, 123)
+
+print("Trying READ...")
+response = client.read_holding_registers(10, 1)
+
+if not response.isError():
+    print("Value:", response.registers[0])
+else:
+    print("Read error")
+
+client.close()
