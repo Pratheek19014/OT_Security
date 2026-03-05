@@ -1,0 +1,9 @@
+import ssl
+from pymodbus.client.sync import ModbusTcpClient
+context = ssl.create_default_context()
+client_socket = context.wrap_socket(
+socket.socket(socket.AF_INET, socket.SOCK_STREAM),
+server_hostname="localhost"
+)
+client = ModbusTcpClient("127.0.0.1", port=5021, framer=None, socket=client_socket)
+client.connect()
