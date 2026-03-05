@@ -1,0 +1,5 @@
+# MODBUS DoS detection (10 NEW TCP connections in 1 second)
+alert tcp any any -> 192.168.30.2 502 (msg:"MODBUS: DoS - >10 NEW connections in 1s"; flags:S; threshold:type threshold, track by_src, count 10, seconds 1; sid:2100101; rev:5;)
+
+# MODBUS Function code 05 detection
+alert tcp any any -> 192.168.30.2 502 (msg:"MODBUS: Function code 05 write coil"; content:"|05|"; offset:7; depth:1; sid:2100102; rev:3; threshold:type both, track by_src, count 1, seconds 60;)

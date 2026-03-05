@@ -1,0 +1,5 @@
+# Attack 2: Safety System Bypass - Only triggers for Modbus Function Code 0x05 (Write Single Coil)
+alert tcp any any -> 192.168.10.100 502 (msg:"MODBUS: Unauthorized Write Single Coil (0x05)"; modbus_func:5; sid:2000103; rev:1;)
+
+# Attack 3: Lateral Movement / SMB Scan - Only triggers if SYN scan to port 445
+alert tcp any any -> 192.168.10.100 445 (msg:"SMB: Unauthorized Access Attempt"; flags:S; sid:2000104; rev:1;)

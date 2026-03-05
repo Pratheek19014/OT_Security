@@ -1,0 +1,8 @@
+# MODBUS Function code 05 detection
+alert tcp any any -> 192.168.30.2 502 (msg:\"MODBUS: Unauthorized Function code 05 write coil\"; flow:established,to_server; content:\"|05|\"; offset:7; depth:1; sid:2100102; rev:4;)
+
+# MODBUS Function code 03 detection (commented out)
+alert tcp any any -> 192.168.30.2 502 (msg:"MODBUS: Read request"; flow:established,to_server; content:"|03|"; offset:7; depth:1; sid:2100103; rev:1;)
+
+# MODBUS DoS detection - SYN flood
+alert tcp any any -> 192.168.30.2 502 (msg:"MODBUS: DoS - SYN flood >10 connections in 1second"; flags:S; flow:to_server; threshold:type limit, track by_src, count 1, seconds 1; sid:2100101; rev:3;)

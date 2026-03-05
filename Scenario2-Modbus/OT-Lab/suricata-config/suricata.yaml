@@ -1,0 +1,32 @@
+%YAML 1.1
+---
+default-rule-path: /etc/suricata/rules
+rule-files:
+  - modbus.rules
+
+app-layer:
+  protocols:
+    modbus:
+      enabled: yes
+      detection-ports:
+        dp: 502
+
+af-packet:
+  - interface: eth0
+    threads: auto
+    cluster-id: 99
+    cluster-type: cluster_flow
+    use-mmap: yes
+
+outputs:
+  - fast:
+      enabled: yes
+      filename: fast.log
+  - eve-log:
+      enabled: yes
+      filetype: regular
+      filename: eve.json
+      types:
+        - alert    
+
+  
