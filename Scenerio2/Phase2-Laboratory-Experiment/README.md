@@ -236,6 +236,19 @@ sudo systemctl enable suricata
 sudo systemctl status suricata
 ```
 
+**Step 5: RUN Suricata.yaml file **
+
+```bash
+sudo suricata -i enp7s0 -c /etc/suricata/suricata.yaml   
+```
+
+
+```bash
+sudo systemctl restart suricata
+sudo systemctl enable suricata
+sudo systemctl status suricata
+```
+
 ---
 
 ## 🎛️ PLC Programming
