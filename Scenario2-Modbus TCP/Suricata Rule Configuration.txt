@@ -1,0 +1,2 @@
+alert tcp any any -> any 5021 (msg:"Modbus Write Attempt Detected";
+ 	modbus_func:5,6,16; sid:1000001; rev:1;)
